@@ -1,8 +1,0 @@
-<!-- This is a placeholder for the logo file. In a real project, you would need to add the actual Logo1.png file here. -->
-<!-- For now, I'll create a simple SVG logo as a placeholder -->
-<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="80" fill="#0b1e36" rx="8"/>
-  <text x="100" y="30" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#c9a15e">OLOHIMOSE</text>
-  <text x="100" y="50" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#ffffff">REALTORS</text>
-  <text x="100" y="65" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="#c9a15e">& ESTATE MANAGERS</text>
-</svg>
