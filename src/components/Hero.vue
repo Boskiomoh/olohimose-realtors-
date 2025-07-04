@@ -51,14 +51,13 @@
 import heroBg1 from "../assets/heroBg1.jpg";
 import heroBg3 from "../assets/heroBg3.jpg";
 import heroBg4 from "../assets/heroBg4.jpg";
-import heroBg9 from "../assets/heroBg9.jpg";
 import heroBg11 from "../assets/heroBg11.jpg";
 
 export default {
   name: "Hero",
   data() {
     return {
-      images: [heroBg1, heroBg3, heroBg4, heroBg9, heroBg11],
+      images: [heroBg1, heroBg3, heroBg4, heroBg11],
       currentIndex: 0,
       interval: null,
     };
