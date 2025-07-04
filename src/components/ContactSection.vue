@@ -51,12 +51,57 @@
               <span class="availability">Mon - Sat, 9AM - 6PM</span>
             </div>
           </div>
+
+          <!-- Form Submissions Counter -->
+          <div class="submissions-counter">
+            <div class="counter-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <path d="M20 8v6"/>
+                <path d="M23 11h-6"/>
+              </svg>
+            </div>
+            <div class="counter-details">
+              <h4>Form Submissions</h4>
+              <p class="counter-number">{{ submissionCount }}</p>
+              <span class="counter-label">Total inquiries received</span>
+            </div>
+          </div>
         </div>
 
         <div class="contact-form-container">
-          <form class="contact-form" @submit.prevent="submitForm">
+          <!-- Success Message -->
+          <div v-if="showSuccessMessage" class="success-message">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+            </div>
+            <h3>Message Sent Successfully!</h3>
+            <p>Thank you for your inquiry. We'll get back to you within 24 hours.</p>
+            <button @click="showSuccessMessage = false" class="close-success">Send Another Message</button>
+          </div>
+
+          <!-- Error Message -->
+          <div v-if="showErrorMessage" class="error-message">
+            <div class="error-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <h3>Message Failed to Send</h3>
+            <p>{{ errorMessage }}</p>
+            <button @click="showErrorMessage = false" class="close-error">Try Again</button>
+          </div>
+
+          <!-- Contact Form -->
+          <form v-if="!showSuccessMessage && !showErrorMessage" class="contact-form" @submit.prevent="submitForm">
             <div class="form-group">
-              <label for="name">Full Name</label>
+              <label for="name">Full Name *</label>
               <input 
                 type="text" 
                 id="name" 
@@ -67,7 +112,7 @@
             </div>
             
             <div class="form-group">
-              <label for="email">Email Address</label>
+              <label for="email">Email Address *</label>
               <input 
                 type="email" 
                 id="email" 
@@ -88,18 +133,20 @@
             </div>
             
             <div class="form-group">
-              <label for="service">Service Interest</label>
+              <label for="service">Service Interest *</label>
               <select id="service" v-model="form.service" required>
                 <option value="">Select a service</option>
                 <option value="property-management">Property Management</option>
                 <option value="investment-consulting">Investment Consulting</option>
                 <option value="property-marketing">Property Marketing</option>
+                <option value="property-buying">Property Buying</option>
+                <option value="property-selling">Property Selling</option>
                 <option value="other">Other</option>
               </select>
             </div>
             
             <div class="form-group">
-              <label for="message">Message</label>
+              <label for="message">Message *</label>
               <textarea 
                 id="message" 
                 v-model="form.message" 
@@ -110,8 +157,17 @@
             </div>
             
             <button type="submit" class="submit-btn" :disabled="isSubmitting">
-              <span v-if="!isSubmitting">Send Message</span>
-              <span v-else>Sending...</span>
+              <span v-if="!isSubmitting">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                </svg>
+                Send Message
+              </span>
+              <span v-else>
+                <div class="loading-spinner"></div>
+                Sending...
+              </span>
             </button>
           </form>
         </div>
@@ -147,6 +203,8 @@
 </template>
 
 <script>
+import emailjs from '@emailjs/browser';
+
 export default {
   name: "ContactSection",
   data() {
@@ -158,19 +216,56 @@ export default {
         service: '',
         message: ''
       },
-      isSubmitting: false
+      isSubmitting: false,
+      showSuccessMessage: false,
+      showErrorMessage: false,
+      errorMessage: '',
+      submissionCount: 0
     };
+  },
+  mounted() {
+    // Initialize EmailJS with your public key
+    emailjs.init("YOUR_PUBLIC_KEY"); // Replace with your actual public key
+    
+    // Load submission count from localStorage
+    this.loadSubmissionCount();
   },
   methods: {
     async submitForm() {
       this.isSubmitting = true;
       
-      // Simulate form submission
-      setTimeout(() => {
-        alert('Thank you for your message! We will get back to you soon.');
+      try {
+        // Prepare template parameters
+        const templateParams = {
+          from_name: this.form.name,
+          from_email: this.form.email,
+          phone: this.form.phone || 'Not provided',
+          service: this.form.service,
+          message: this.form.message,
+          to_email: 'info@olohimose.com', // Your client's email
+          submission_date: new Date().toLocaleString(),
+          submission_number: this.submissionCount + 1
+        };
+
+        // Send email using EmailJS
+        await emailjs.send(
+          'YOUR_SERVICE_ID',    // Replace with your service ID
+          'YOUR_TEMPLATE_ID',   // Replace with your template ID
+          templateParams
+        );
+
+        // Success - increment counter and show success message
+        this.incrementSubmissionCount();
+        this.showSuccessMessage = true;
         this.resetForm();
+        
+      } catch (error) {
+        console.error('EmailJS Error:', error);
+        this.errorMessage = 'There was an error sending your message. Please try again or contact us directly.';
+        this.showErrorMessage = true;
+      } finally {
         this.isSubmitting = false;
-      }, 1000);
+      }
     },
     
     resetForm() {
@@ -181,6 +276,16 @@ export default {
         service: '',
         message: ''
       };
+    },
+
+    loadSubmissionCount() {
+      const count = localStorage.getItem('olohimose_submission_count');
+      this.submissionCount = count ? parseInt(count) : 0;
+    },
+
+    incrementSubmissionCount() {
+      this.submissionCount++;
+      localStorage.setItem('olohimose_submission_count', this.submissionCount.toString());
     }
   }
 };
@@ -244,7 +349,7 @@ export default {
   gap: 2rem;
 }
 
-.contact-card {
+.contact-card, .submissions-counter {
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -256,12 +361,12 @@ export default {
   border: 1px solid rgba(201, 161, 94, 0.1);
 }
 
-.contact-card:hover {
+.contact-card:hover, .submissions-counter:hover {
   transform: translateY(-5px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
 }
 
-.contact-icon {
+.contact-icon, .counter-icon {
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, #c9a15e 0%, #b8935a 100%);
@@ -273,28 +378,35 @@ export default {
   flex-shrink: 0;
 }
 
-.contact-icon svg {
+.contact-icon svg, .counter-icon svg {
   width: 24px;
   height: 24px;
 }
 
-.contact-details h4 {
+.contact-details h4, .counter-details h4 {
   font-size: 1.3rem;
   font-weight: 700;
   color: #0b1e36;
   margin-bottom: 0.5rem;
 }
 
-.contact-details p {
+.contact-details p, .counter-details p {
   font-size: 1.1rem;
   color: #333;
   margin-bottom: 0.5rem;
 }
 
-.availability {
+.availability, .counter-label {
   font-size: 0.9rem;
   color: #c9a15e;
   font-weight: 600;
+}
+
+.counter-number {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  color: #c9a15e !important;
+  margin: 0.5rem 0 !important;
 }
 
 .contact-form-container {
@@ -303,6 +415,74 @@ export default {
   border-radius: 20px;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(201, 161, 94, 0.1);
+}
+
+.success-message, .error-message {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.success-message {
+  color: #22c55e;
+}
+
+.error-message {
+  color: #ef4444;
+}
+
+.success-icon, .error-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  background: currentColor;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.success-icon {
+  background: #22c55e;
+}
+
+.error-icon {
+  background: #ef4444;
+}
+
+.success-icon svg, .error-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.success-message h3, .error-message h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #0b1e36;
+}
+
+.success-message p, .error-message p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.close-success, .close-error {
+  background: linear-gradient(135deg, #c9a15e 0%, #b8935a 100%);
+  color: #fff;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-success:hover, .close-error:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(201, 161, 94, 0.4);
 }
 
 .contact-form {
@@ -359,6 +539,10 @@ export default {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -369,6 +553,25 @@ export default {
 .submit-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.submit-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .social-section {
@@ -456,6 +659,10 @@ export default {
   .social-link {
     width: 50px;
     height: 50px;
+  }
+
+  .success-message, .error-message {
+    padding: 2rem 1rem;
   }
 }
 </style>
